@@ -33,23 +33,7 @@ Speed of Sound Calculator (Successive Difference Method)
    - 声速 v 的不确定度 (忽略 f 的极小不确定度): u(v) = f * u(λ)
 """
 
-def scientific_round(value, uncertainty):
-    """
-    按照“四舍六入五凑偶”修约：
-    1. 不确定度 u 保留一位有效数字
-    2. 平均值末位与 u 对齐
-    """
-    if uncertainty == 0:
-        return str(value), "0"
-    
-    u_float = float(uncertainty)
-    first_digit_pos = math.floor(math.log10(u_float))
-    prec = Decimal('1e' + str(first_digit_pos))
-    
-    u_final = uncertainty.quantize(prec, rounding=ROUND_HALF_EVEN)
-    val_final = value.quantize(prec, rounding=ROUND_HALF_EVEN)
-    
-    return val_final, u_final
+from utils import scientific_round
 
 def calculate_method(method_name, f, k, delta_inst):
     print(f"\n========================================")

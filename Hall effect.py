@@ -83,68 +83,11 @@ Hall Effect Experiment Data Processor
 #  通用工具函数
 # ═══════════════════════════════════════════════════════
 
-def scientific_round(value, uncertainty):
-    """
-    按照"四舍六入五凑偶"修约：
-    1. 不确定度 u 保留一位有效数字
-    2. 结果末位与 u 对齐
-    """
-    if uncertainty <= 0:
-        return str(value), "0"
-
-    d_val = Decimal(str(value))
-    d_unc = Decimal(str(uncertainty))
-
-    first_digit_pos = math.floor(math.log10(float(d_unc)))
-    prec = Decimal('1e' + str(first_digit_pos))
-
-    u_final = d_unc.quantize(prec, rounding=ROUND_HALF_EVEN)
-    val_final = d_val.quantize(prec, rounding=ROUND_HALF_EVEN)
-
-    return val_final, u_final
-
-
-def linear_regression(x_list, y_list):
-    """
-    最小二乘法线性回归: y = k·x + b
-    返回: 斜率 k, 截距 b, 相关系数 r, 斜率不确定度 u_k
-    u_k = |k| · √[(1/r² − 1) / (n − 2)]
-    """
-    n = len(x_list)
-    x_mean = sum(x_list) / n
-    y_mean = sum(y_list) / n
-
-    Lxx = sum((xi - x_mean) ** 2 for xi in x_list)
-    Lyy = sum((yi - y_mean) ** 2 for yi in y_list)
-    Lxy = sum((x_list[i] - x_mean) * (y_list[i] - y_mean) for i in range(n))
-
-    k = Lxy / Lxx if Lxx != 0 else 0.0
-    b = y_mean - k * x_mean
-
-    denom = math.sqrt(Lxx * Lyy) if Lxx * Lyy > 0 else 1.0
-    r = Lxy / denom
-
-    if abs(r) < 1.0 and n > 2:
-        u_k = abs(k) * math.sqrt((1.0 / r ** 2 - 1.0) / (n - 2))
-    else:
-        u_k = 0.0
-
-    return k, b, r, u_k
-
-
-def input_float(prompt, default=None):
-    """输入一个浮点数值，支持默认值"""
-    while True:
-        try:
-            suffix = f" (默认 {default})" if default is not None else ""
-            val = input(f"{prompt}{suffix}: ").strip()
-            if not val and default is not None:
-                return float(default)
-            if not val:
-                continue
-            return float(val)
-        except Exception:
-            print("  输入无效，请输入数字。")
+from utils import (
+    scientific_round,
+    linear_regression,
+    input_float
+)
 
 
 def print_regression(label, k, b, r, u_k, x_unit, y_unit):
@@ -259,7 +202,7 @@ def main():
     print(f"{'─' * 46}")
 
     # 线性回归: VH(mV) vs Is(mA)  —— 使用绝对值 VH
-    slope_1, intercept_1, r_1, u_slope_1 = linear_regression(Is_1, VH_abs_1)
+    slope_1, intercept_1, r_1, u_slope_1 = map(float, linear_regression(Is_1, VH_abs_1))
     print_regression("VH-Is", slope_1, intercept_1, r_1, u_slope_1, "mA", "mV")
 
     # 注: 斜率单位 mV/mA = V/A
@@ -321,7 +264,7 @@ def main():
     print(f"{'─' * 46}")
 
     # 线性回归: VH(mV) vs Im(mA)
-    slope_2, intercept_2, r_2, u_slope_2 = linear_regression(Im_2, VH_abs_2)
+    slope_2, intercept_2, r_2, u_slope_2 = map(float, linear_regression(Im_2, VH_abs_2))
     print_regression("VH-Im", slope_2, intercept_2, r_2, u_slope_2, "mA", "mV")
 
     input("\n  按回车继续...")
@@ -355,7 +298,7 @@ def main():
     print(f"{'─' * 36}")
 
     # 线性回归: Vσ(mV) vs Is(mA)
-    slope_3, intercept_3, r_3, u_slope_3 = linear_regression(Is_3, Vsigma)
+    slope_3, intercept_3, r_3, u_slope_3 = map(float, linear_regression(Is_3, Vsigma))
     print_regression("Vσ-Is", slope_3, intercept_3, r_3, u_slope_3, "mA", "mV")
     print(f"    注: 斜率 = Vσ/Is, 单位 mV/mA = V/A = Ω (样品电阻)")
 

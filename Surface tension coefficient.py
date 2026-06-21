@@ -44,87 +44,12 @@ Surface Tension Coefficient Calculator (Pull-off Method)
    u_B,X = Δ_inst / sqrt(3)
 """
 
-def scientific_round(value, uncertainty):
-    """
-    按照“四舍六入五凑偶”修约：
-    1. 不确定度 u 保留一位有效数字
-    2. 平均值末位与 u 对齐
-    """
-    if uncertainty <= 0:
-        return str(value), "0"
-    
-    u_float = float(uncertainty)
-    first_digit_pos = math.floor(math.log10(u_float))
-    prec = Decimal('1e' + str(first_digit_pos))
-    
-    u_final = uncertainty.quantize(prec, rounding=ROUND_HALF_EVEN)
-    val_final = value.quantize(prec, rounding=ROUND_HALF_EVEN)
-    
-    return val_final, u_final
-
-def calculate_stats(data_list, delta_inst):
-    """计算一组数据的平均值、A类、B类及合成不确定度"""
-    n = len(data_list)
-    mean = sum(data_list) / Decimal(n)
-    
-    if n > 1:
-        variance = sum((x - mean)**2 for x in data_list) / Decimal(n - 1)
-        s = Decimal(str(math.sqrt(float(variance))))
-        u_a = s / Decimal(str(math.sqrt(n)))
-    else:
-        u_a = Decimal("0")
-        
-    u_b = Decimal(delta_inst) / Decimal(str(math.sqrt(3)))
-    u_combined = Decimal(str(math.sqrt(float(u_a**2 + u_b**2))))
-    
-    return mean, u_combined
-
-def linear_regression(x_list, y_list):
-    """
-    对 (x, y) 列表进行线性回归，返回斜率 k, 截距 b, 及斜率的标准不确定度 u_k
-    """
-    n = len(x_list)
-    x_mean = sum(x_list) / Decimal(n)
-    y_mean = sum(y_list) / Decimal(n)
-    
-    L_xx = sum((x - x_mean)**2 for x in x_list)
-    L_yy = sum((y - y_mean)**2 for y in y_list)
-    L_xy = sum((x_list[i] - x_mean) * (y_list[i] - y_mean) for i in range(n))
-    
-    # 斜率
-    k = L_xy / L_xx
-    # 截距
-    b = y_mean - k * x_mean
-    
-    # 相关系数 r
-    r = L_xy / Decimal(str(math.sqrt(float(L_xx * L_yy))))
-    
-    # 斜率的标准不确定度 u_k
-    # u_k = k * sqrt( (1/r^2 - 1) / (n - 2) )
-    r_float = float(r)
-    if abs(r_float) < 1.0:
-        u_k_float = float(k) * math.sqrt( (1.0 / (r_float**2) - 1.0) / (n - 2) )
-    else:
-        u_k_float = 0.0
-    u_k = Decimal(str(abs(u_k_float)))
-    
-    return k, b, r, u_k
-
-def input_data_group(name, count, unit=""):
-    """输入一组重复测量的数值"""
-    prompt_unit = f" (单位: {unit})" if unit else ""
-    print(f"\n请输入 {name} 的 {count} 次测量值{prompt_unit}:")
-    data = []
-    for i in range(count):
-        while True:
-            try:
-                val = input(f"第 {i+1} 次 = ").strip()
-                if not val: continue
-                data.append(Decimal(val))
-                break
-            except Exception:
-                print("输入无效，请输入数字。")
-    return data
+from utils import (
+    scientific_round,
+    calculate_stats,
+    linear_regression,
+    input_data_group
+)
 
 def main():
     print("========================================")
@@ -196,15 +121,15 @@ def main():
     
     # 输入拉脱电压 U_pull (6次)
     U_pull_vals = input_data_group("拉脱时的电压差/峰值电压 U_pull", 6, "同标定电压单位")
-    U_pull_mean, U_pull_u = calculate_stats(U_pull_vals, delta_U)
+    U_pull_mean, U_pull_u = calculate_stats(U_pull_vals, delta_U)[:2]
     
     # 输入内径 d1 (6次)
     d1_vals = input_data_group("铁环内径 d1", 6, "mm")
-    d1_mean, d1_u = calculate_stats(d1_vals, delta_d)
+    d1_mean, d1_u = calculate_stats(d1_vals, delta_d)[:2]
     
     # 输入外径 d2 (6次)
     d2_vals = input_data_group("铁环外径 d2", 6, "mm")
-    d2_mean, d2_u = calculate_stats(d2_vals, delta_d)
+    d2_mean, d2_u = calculate_stats(d2_vals, delta_d)[:2]
     
     # --- 3. 表面张力系数计算 ---
     # F = U / K

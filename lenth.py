@@ -1,14 +1,7 @@
 import math
 from decimal import Decimal, ROUND_HALF_EVEN
 
-def get_decimal_places(data_strings):
-    """获取输入数据中小数点后的位数"""
-    max_places = 0
-    for s in data_strings:
-        if '.' in s:
-            places = len(s.split('.')[1])
-            max_places = max(max_places, places)
-    return max_places
+from utils import get_decimal_places, scientific_round
 
 def calc_uncertainty(data_strs, res_str="0.05"):
     # 转换为 Decimal 进行高精度计算
@@ -44,17 +37,7 @@ def format_final_result(mean, u):
     1. 不确定度 u 保留一位有效数字
     2. 平均值末位与 u 对齐
     """
-    u_float = float(u)
-    # 找到第一位非零数字的位置
-    first_digit_pos = math.floor(math.log10(u_float))
-    prec = Decimal('1e' + str(first_digit_pos))
-    
-    # 修改：不确定度 u 的修约改为 ROUND_HALF_EVEN
-    u_final = u.quantize(prec, rounding=ROUND_HALF_EVEN)
-    
-    # 修改：平均值修约保持一致
-    mean_final = mean.quantize(prec, rounding=ROUND_HALF_EVEN)
-    
+    mean_final, u_final = scientific_round(mean, u)
     return f"f = {mean_final} ± {u_final}"
 
 if __name__ == "__main__":

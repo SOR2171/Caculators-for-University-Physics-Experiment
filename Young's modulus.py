@@ -20,62 +20,11 @@ Young's Modulus Calculator (Optical Lever & Successive Difference Method)
    u_B,X = Δ_inst / sqrt(3)
 """
 
-def scientific_round(value, uncertainty):
-    """
-    按照“四舍六入五凑偶”修约：
-    1. 不确定度 u 保留一位有效数字（若首位是1或2，有时保留两位，此处统一保留一位）
-    2. 平均值末位与 u 对齐
-    """
-    if uncertainty <= 0:
-        return str(value), "0"
-    
-    u_float = float(uncertainty)
-    # 找到第一位非零数字的位置
-    first_digit_pos = math.floor(math.log10(u_float))
-    prec = Decimal('1e' + str(first_digit_pos))
-    
-    # 不确定度修约
-    u_final = uncertainty.quantize(prec, rounding=ROUND_HALF_EVEN)
-    # 平均值修约，保持与不确定度末位对齐
-    val_final = value.quantize(prec, rounding=ROUND_HALF_EVEN)
-    
-    return val_final, u_final
-
-def calculate_stats(data_list, delta_inst):
-    """计算一组数据的平均值、A类、B类及合成不确定度"""
-    n = len(data_list)
-    mean = sum(data_list) / Decimal(n)
-    
-    # A类不确定度
-    if n > 1:
-        variance = sum((x - mean)**2 for x in data_list) / Decimal(n - 1)
-        s = Decimal(str(math.sqrt(float(variance))))
-        u_a = s / Decimal(str(math.sqrt(n)))
-    else:
-        u_a = Decimal("0")
-        
-    # B类不确定度
-    u_b = Decimal(delta_inst) / Decimal(str(math.sqrt(3)))
-    
-    # 合成
-    u_combined = Decimal(str(math.sqrt(float(u_a**2 + u_b**2))))
-    
-    return mean, u_combined
-
-def input_data_group(name, count, unit="mm"):
-    """输入一组重复测量的数值"""
-    print(f"\n请输入 {name} 的 {count} 次测量值 (单位: {unit}):")
-    data = []
-    for i in range(count):
-        while True:
-            try:
-                val = input(f"{name}_{i+1} = ").strip()
-                if not val: continue
-                data.append(Decimal(val))
-                break
-            except Exception:
-                print("输入无效，请输入数字。")
-    return data
+from utils import (
+    scientific_round,
+    calculate_stats,
+    input_data_group
+)
 
 def main():
     # --- 1. 常量设置 ---
@@ -102,10 +51,10 @@ def main():
     delta_d = Decimal(input("d 的仪器误差 (mm, 默认 0.005): ").strip() or "0.005")
     delta_b = Decimal(input("b 的仪器误差 (mm, 默认 0.02): ").strip() or "0.02")
     
-    L_mean, L_u = calculate_stats(L_vals, delta_L)
-    D_mean, D_u = calculate_stats(D_vals, delta_D)
-    d_mean, d_u = calculate_stats(d_vals, delta_d)
-    b_mean, b_u = calculate_stats(b_vals, delta_b)
+    L_mean, L_u = calculate_stats(L_vals, delta_L)[:2]
+    D_mean, D_u = calculate_stats(D_vals, delta_D)[:2]
+    d_mean, d_u = calculate_stats(d_vals, delta_d)[:2]
+    b_mean, b_u = calculate_stats(b_vals, delta_b)[:2]
     
     # --- 3. 刻度值输入 (0-7个砝码, 加重+减重) ---
     print("\n--- 输入刻度尺读数 n (单位: mm) ---")

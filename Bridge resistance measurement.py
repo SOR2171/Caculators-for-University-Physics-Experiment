@@ -1,5 +1,11 @@
 import math
 from decimal import Decimal, ROUND_HALF_EVEN
+from utils import (
+    scientific_round,
+    calculate_stats,
+    input_decimal,
+    input_int
+)
 
 """
 Wheatstone Bridge Resistance Measurement Calculator
@@ -56,71 +62,6 @@ Wheatstone Bridge Resistance Measurement Calculator
        Rx 末位与不确定度对齐
 """
 
-def scientific_round(value, uncertainty):
-    """
-    按照"四舍六入五凑偶"修约：
-    1. 不确定度 u 保留一位有效数字
-    2. 平均值末位与 u 对齐
-    """
-    if uncertainty <= 0:
-        return str(value), "0"
-    
-    u_float = float(uncertainty)
-    first_digit_pos = math.floor(math.log10(u_float))
-    prec = Decimal('1e' + str(first_digit_pos))
-    
-    u_final = uncertainty.quantize(prec, rounding=ROUND_HALF_EVEN)
-    val_final = value.quantize(prec, rounding=ROUND_HALF_EVEN)
-    
-    return val_final, u_final
-
-def calculate_stats(data_list, delta_inst):
-    """
-    计算一组数据的平均值、A类、B类及合成不确定度
-    u(X) = sqrt( u_A^2 + u_B^2 )
-    u_A = s / sqrt(n)
-    u_B = Δ_inst / sqrt(3)
-    """
-    n = len(data_list)
-    mean = sum(data_list) / Decimal(n)
-    
-    if n > 1:
-        variance = sum((x - mean)**2 for x in data_list) / Decimal(n - 1)
-        s = Decimal(str(math.sqrt(float(variance))))
-        u_a = s / Decimal(str(math.sqrt(n)))
-    else:
-        u_a = Decimal("0")
-        
-    u_b = Decimal(delta_inst) / Decimal(str(math.sqrt(3)))
-    u_combined = Decimal(str(math.sqrt(float(u_a**2 + u_b**2))))
-    
-    return mean, u_a, u_b, u_combined
-
-def input_decimal(prompt, default=None):
-    """输入一个 Decimal 值，支持默认值"""
-    while True:
-        try:
-            suffix = f" (默认 {default})" if default else ""
-            val = input(f"{prompt}{suffix}: ").strip()
-            if not val and default is not None:
-                return Decimal(str(default))
-            if not val:
-                continue
-            return Decimal(val)
-        except Exception:
-            print("输入无效，请输入数字。")
-
-def input_int(prompt, default=None):
-    """输入一个整数，支持默认值"""
-    while True:
-        try:
-            suffix = f" (默认 {default})" if default else ""
-            val = input(f"{prompt}{suffix}: ").strip()
-            if not val and default is not None:
-                return default
-            return int(val)
-        except Exception:
-            print("输入无效，请输入整数。")
 
 def measure_one_ratio(ratio_label, C_value, R_nominal, n_measurements):
     """
@@ -174,7 +115,7 @@ def measure_one_ratio(ratio_label, C_value, R_nominal, n_measurements):
         delta_inst = R0_mean / S
     
     # --- 不确定度分析 ---
-    R0_mean_final, u_a_R0, u_b_R0, u_R0 = calculate_stats(R0_data, str(delta_inst))
+    R0_mean_final, u_R0, u_a_R0, u_b_R0, _ = calculate_stats(R0_data, str(delta_inst))
     
     # Rx = C * R0
     Rx_mean = C * R0_mean_final

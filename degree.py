@@ -1,55 +1,11 @@
 import math
 from decimal import Decimal, ROUND_HALF_EVEN
 
-def parse_angle_to_minutes(s):
-    """
-    将输入解析为内部统一单位：分钟（Decimal）。
-    支持格式：
-    1. 'D.M' -> D度M分 (例如 '120.15' -> 120*60 + 15 = 7215分)
-    2. 'D' (纯数字无点) -> D度 (例如 '120' -> 120*60 = 7200分)
-    3. 'D.M.S' -> D度M分S秒 (例如 '120.15.30' -> 7215.5分)
-    """
-    parts = s.split('.')
-    if len(parts) == 1:
-        # 视为度
-        return Decimal(parts[0]) * 60
-    elif len(parts) == 2:
-        # 度.分
-        return Decimal(parts[0]) * 60 + Decimal(parts[1])
-    else:
-        # 度.分.秒 或更多
-        res = Decimal(parts[0]) * 60 + Decimal(parts[1])
-        if len(parts) >= 3:
-            res += Decimal(parts[2]) / 60
-        return res
-
-def format_minutes_as_angle(minutes, prec=None):
-    """
-    将总分钟数转换为 D° M' 格式，支持保持对齐精度。
-    """
-    neg = minutes < 0
-    minutes = abs(minutes)
-    
-    d = int(minutes // 60)
-    m = minutes % 60
-    
-    # 进位处理：如果 m 由于位宽限制进位到 60
-    if m >= 60:
-        d += 1
-        m -= 60
-        
-    if prec is not None and prec < 1:
-        # 计算小数位数
-        places = abs(prec.as_tuple().exponent)
-        m_str = format(m, f'.{places}f')
-    else:
-        # 整数或自动小数位
-        if m == int(m):
-            m_str = str(int(m))
-        else:
-            m_str = format(m, 'f').rstrip('0').rstrip('.')
-            
-    return f"{'-' if neg else ''}{d}°{m_str}'"
+from utils import (
+    parse_angle_to_minutes,
+    format_minutes_as_angle,
+    scientific_round
+)
 
 def calc_uncertainty(data_strs, res_str="1"):
     # 转换为分钟进行高精度计算
@@ -89,15 +45,11 @@ def format_final_result(mean_minutes, u_minutes):
     if u_float == 0:
         return f"θ = {format_minutes_as_angle(mean_minutes)} ± 0'"
         
-    # 找到第一位非零数字的位置
     first_digit_pos = math.floor(math.log10(u_float))
     prec = Decimal('1e' + str(first_digit_pos))
     
-    # 修约
-    u_final = u_minutes.quantize(prec, rounding=ROUND_HALF_EVEN)
-    mean_final_val = mean_minutes.quantize(prec, rounding=ROUND_HALF_EVEN)
+    mean_final_val, u_final = scientific_round(mean_minutes, u_minutes)
     
-    # 转换为角度字符串输出
     mean_str = format_minutes_as_angle(mean_final_val, prec)
     u_str = f"{u_final}'"
     

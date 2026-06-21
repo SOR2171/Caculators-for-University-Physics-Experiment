@@ -38,55 +38,11 @@ Viscosity Coefficient Calculator (Stokes' Law)
    u_B,X = Δ_inst / sqrt(3)
 """
 
-def scientific_round(value, uncertainty):
-    """
-    按照“四舍六入五凑偶”修约：
-    1. 不确定度 u 保留一位有效数字
-    2. 平均值末位与 u 对齐
-    """
-    if uncertainty <= 0:
-        return str(value), "0"
-    
-    u_float = float(uncertainty)
-    first_digit_pos = math.floor(math.log10(u_float))
-    prec = Decimal('1e' + str(first_digit_pos))
-    
-    u_final = uncertainty.quantize(prec, rounding=ROUND_HALF_EVEN)
-    val_final = value.quantize(prec, rounding=ROUND_HALF_EVEN)
-    
-    return val_final, u_final
-
-def calculate_stats(data_list, delta_inst):
-    """计算一组数据的平均值、A类、B类及合成不确定度"""
-    n = len(data_list)
-    mean = sum(data_list) / Decimal(n)
-    
-    if n > 1:
-        variance = sum((x - mean)**2 for x in data_list) / Decimal(n - 1)
-        s = Decimal(str(math.sqrt(float(variance))))
-        u_a = s / Decimal(str(math.sqrt(n)))
-    else:
-        u_a = Decimal("0")
-        
-    u_b = Decimal(delta_inst) / Decimal(str(math.sqrt(3)))
-    u_combined = Decimal(str(math.sqrt(float(u_a**2 + u_b**2))))
-    
-    return mean, u_combined
-
-def input_data_group(name, count, unit=""):
-    """输入一组重复测量的数值"""
-    print(f"\n请输入 {name} 的 {count} 次测量值" + (f" (单位: {unit})" if unit else "") + ":")
-    data = []
-    for i in range(count):
-        while True:
-            try:
-                val = input(f"第 {i+1} 次 = ").strip()
-                if not val: continue
-                data.append(Decimal(val))
-                break
-            except Exception:
-                print("输入无效，请输入数字。")
-    return data
+from utils import (
+    scientific_round,
+    calculate_stats,
+    input_data_group
+)
 
 def main():
     print("========================================")
@@ -129,7 +85,7 @@ def main():
     
     # 输入5个时间数据
     t_vals = input_data_group("小球下落时间 t", 5, "s")
-    t_mean, t_u = calculate_stats(t_vals, delta_t)
+    t_mean, t_u = calculate_stats(t_vals, delta_t)[:2]
     
     # --- 3. 粘滞系数计算 ---
     # 统一转化为国际标准单位 (m, kg, s)

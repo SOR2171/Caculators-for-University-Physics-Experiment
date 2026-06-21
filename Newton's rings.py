@@ -8,35 +8,7 @@ Newton's Rings Curvature Radius Calculator (Successive Difference Method)
 参考 lenth.py 的高精度与不确定度修约逻辑。
 """
 
-def get_decimal_places(data_strings):
-    """获取输入数据中小数点后的保留位数，用于自适应展示"""
-    max_places = 0
-    for s in data_strings:
-        if '.' in s:
-            places = len(s.split('.')[1])
-            max_places = max(max_places, places)
-    return max_places
-
-def scientific_round(value, uncertainty):
-    """
-    按照“四舍六入五凑偶”修约：
-    1. 不确定度 u 保留一位有效数字
-    2. 平均值末位与 u 对齐
-    """
-    if uncertainty == 0:
-        return str(value), "0"
-    
-    u_float = float(uncertainty)
-    # 找到第一位非零数字的位置
-    first_digit_pos = math.floor(math.log10(u_float))
-    prec = Decimal('1e' + str(first_digit_pos))
-    
-    # 不确定度修约
-    u_final = uncertainty.quantize(prec, rounding=ROUND_HALF_EVEN)
-    # 平均值修约，保持与不确定度末位对齐
-    val_final = value.quantize(prec, rounding=ROUND_HALF_EVEN)
-    
-    return val_final, u_final
+from utils import get_decimal_places, scientific_round
 
 def main():
     # --- 1. 参数与常量初始化 ---
