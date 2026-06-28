@@ -1,5 +1,4 @@
 import math
-from decimal import Decimal, ROUND_HALF_EVEN
 
 """
 Hall Effect Experiment Data Processor

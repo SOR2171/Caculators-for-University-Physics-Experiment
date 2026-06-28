@@ -1,5 +1,5 @@
 import math
-from decimal import Decimal, ROUND_HALF_EVEN
+from decimal import Decimal
 
 """
 Speed of Sound Calculator (Successive Difference Method)

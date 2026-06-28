@@ -1,5 +1,5 @@
 import math
-from decimal import Decimal, ROUND_HALF_EVEN
+from decimal import Decimal
 
 """
 Newton's Rings Curvature Radius Calculator (Successive Difference Method)

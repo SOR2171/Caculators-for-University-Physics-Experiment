@@ -1,5 +1,5 @@
 import math
-from decimal import Decimal, ROUND_HALF_EVEN
+from decimal import Decimal
 
 """
 Young's Modulus Calculator (Optical Lever & Successive Difference Method)

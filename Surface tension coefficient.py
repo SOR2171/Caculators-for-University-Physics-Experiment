@@ -1,5 +1,5 @@
 import math
-from decimal import Decimal, ROUND_HALF_EVEN
+from decimal import Decimal
 
 """
 Surface Tension Coefficient Calculator (Pull-off Method)

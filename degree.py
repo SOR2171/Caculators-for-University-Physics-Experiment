@@ -1,5 +1,5 @@
 import math
-from decimal import Decimal, ROUND_HALF_EVEN
+from decimal import Decimal
 
 from utils import (
     parse_angle_to_minutes,
