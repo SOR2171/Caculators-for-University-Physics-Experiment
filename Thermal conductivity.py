@@ -21,18 +21,18 @@ Thermal Conductivity & Specific Heat Calculator (Steady-State Plate Method)
      其中 R = 样品厚度, ΔT = 加热面温度 - 中心面温度
 
   3. 温度转换 (热电偶):
-     ΔT = ΔU / S
-     其中 S = 热电偶灵敏度系数 (mV/K), ΔU = U_加热面 - U_中心面
+     ΔT = ΔU / (1000 · S)
+     其中 S = 热电偶灵敏度系数 (mV/K), ΔU = U_加热面 - U_中心面 (单位: uV)
 
   4. 比热容 (冷却法):
-     c = q_c · F / (m · |κ|)
+     c = 2 · q_c · F / (m · |κ|)
      其中 m = 样品质量, κ = dT/dτ|_冷却 为冷却曲线在稳态温度处的斜率
 
   5. 不确定度传递 — 导热系数 λ = V²·R / (4·F·r·ΔT):
      u_r(λ) = √[ (2·u_V/V)² + (u_R/R)² + (u_F/F)² + (u_r/r)² + (u_ΔT/ΔT)² ]
      u(ΔU) 取稳态区间多点的 A 类 + 仪器 B 类合成; u_r(ΔT) ≈ u(ΔU)/|ΔU|
 
-  6. 不确定度传递 — 比热容 c = V² / (2·r·m·|κ|):
+  6. 不确定度传递 — 比热容 c = V² / (r·m·|κ|):
      u_r(c) = √[ (2·u_V/V)² + (u_r/r)² + (u_m/m)² + (u_κ/|κ|)² ]
      u_κ 由冷却曲线线性拟合的斜率标准差给出
 """
@@ -40,7 +40,6 @@ Thermal Conductivity & Specific Heat Calculator (Steady-State Plate Method)
 from utils import (
     scientific_round,
     calculate_stats,
-    input_data_group,
     linear_regression
 )
 
@@ -108,8 +107,9 @@ def compute_thermal_conductivity(
     time_min = list(range(1, n + 1))  # 1 ~ n 分钟
 
     # --- 1. 转换为温度差 ΔT(t) ---
+    S_uV = S_sensitivity * Decimal("1000")  # 将 mV/K 转换为 uV/K 以匹配 uV 数据
     delta_uV = [heating_uV[i] - center_uV[i] for i in range(n)]
-    delta_T  = [dv / S_sensitivity for dv in delta_uV]
+    delta_T  = [dv / S_uV for dv in delta_uV]
 
     # --- 2. 判断稳态 ---
     ss_idx_center  = find_steady_state(center_uV)
@@ -118,7 +118,7 @@ def compute_thermal_conductivity(
 
     # 稳态区间 ΔU 列表（A 类不确定度来源）
     steady_delta_uV = delta_uV[ss_idx:]
-    delta_T_steady  = sum(steady_delta_uV) / Decimal(len(steady_delta_uV)) / S_sensitivity
+    delta_T_steady  = sum(steady_delta_uV) / Decimal(len(steady_delta_uV)) / S_uV
 
     center_steady_avg  = sum(center_uV[ss_idx:])  / Decimal(len(center_uV[ss_idx:]))
     heating_steady_avg = sum(heating_uV[ss_idx:]) / Decimal(len(heating_uV[ss_idx:]))
@@ -133,7 +133,7 @@ def compute_thermal_conductivity(
     if n >= 3:
         last_n = min(5, n)
         x_fit = [Decimal(str(t * 60)) for t in time_min[-last_n:]]   # 秒
-        y_fit = [center_uV[i] / S_sensitivity for i in range(-last_n, 0)]  # K (相对)
+        y_fit = [center_uV[i] / S_uV for i in range(-last_n, 0)]  # K (相对)
         dT_dtau, _, _, _ = linear_regression(x_fit, y_fit)            # K/s
     else:
         dT_dtau = Decimal("0")
@@ -172,14 +172,15 @@ def compute_specific_heat(cooling_uV, S_sensitivity, q_c, F, m_sample):
       u_dTdtau     — |κ| 的不确定度 (K/s), 由线性拟合给出
     """
     n      = len(cooling_uV)
+    S_uV   = S_sensitivity * Decimal("1000")                  # 将 mV/K 转换为 uV/K 以匹配 uV 数据
     x_cool = [Decimal(str(i * 60)) for i in range(n)]     # 秒
-    y_cool = [uv / S_sensitivity for uv in cooling_uV]    # 相对温度 (K)
+    y_cool = [uv / S_uV for uv in cooling_uV]    # 相对温度 (K)
 
     k, _, _, u_k = linear_regression(x_cool, y_cool)
     dT_dtau_cool = abs(k)    # 冷却时斜率为负，取绝对值
     u_dTdtau     = abs(u_k)
 
-    c = (q_c * F / (m_sample * dT_dtau_cool)) if dT_dtau_cool != 0 else Decimal("0")
+    c = (Decimal("2") * q_c * F / (m_sample * dT_dtau_cool)) if dT_dtau_cool != 0 else Decimal("0")
     return c, dT_dtau_cool, u_dTdtau
 
 
@@ -236,7 +237,7 @@ def compute_uncertainties(
     ur_c_sq = (Decimal("2") * ur_V)**2 + ur_r**2 + ur_m**2 + ur_cool**2
     ur_c    = Decimal(str(math.sqrt(float(ur_c_sq))))
 
-    c_val = (q_c * F / (m_sample * dT_dtau_cool)) if dT_dtau_cool != 0 else Decimal("0")
+    c_val = (Decimal("2") * q_c * F / (m_sample * dT_dtau_cool)) if dT_dtau_cool != 0 else Decimal("0")
     u_c   = c_val * ur_c
 
     return {
