@@ -1,4 +1,4 @@
-﻿# Calculators-for-University-Physics-Experiment
+﻿# CUPE  - 大物实验计算器
 
 我只能用一次，但是分享出来就可以一直有人用。
 
@@ -10,6 +10,6 @@
 
 ## 项目结构
 
-[Excel](./Excel)文件夹里的是 Excel xlxs 文件，可以简单参考。
+[python](./python) 文件夹里的是 py 与 ipynb 文件，是真正处理数据的部分。
 
-[python](./python)文件夹里的是 py 与 ipynb 文件，是真正处理数据的部分。
+[Excel](./Excel) 文件夹里的是 Excel xlxs 文件，可以简单参考。
